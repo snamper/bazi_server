@@ -1,6 +1,11 @@
-_M = {}
-_M.J2000 = 2451545  --2000ÄêÇ°ÈåÂÔÈÕÊı(2000-1-1 12:00:00¸ñÁÖÍşÖÎÆ½Ê±)
-_M.dts   = {-4000, 108371.7, -13036.80, 392.000,  0.0000,
+--local date = require("date")
+local JDatetime = {}
+
+function JDatetime:new(dt)
+    local _instance = {}
+
+    _instance.J2000 = 2451545  --2000å¹´å‰å„’ç•¥æ—¥æ•°(2000-1-1 12:00:00æ ¼æ—å¨æ²»å¹³æ—¶)
+    _instance.dts   = {-4000, 108371.7, -13036.80, 392.000,  0.0000,
                     -500,  17201.0,  -627.82,   16.170,   0.3413,
                     -150,  12200.6,  -346.41,   5.403,   -0.1593,
                     150,   9113.8,   -328.13,  -1.647,   0.0377,
@@ -22,10 +27,21 @@ _M.dts   = {-4000, 108371.7, -13036.80, 392.000,  0.0000,
                     2005,  64.7,     0.4,       0,        0,
                     2015,  69 }
 
+    if dt ~= nil and type(dt) == 'table' then
+        _instance.Y = dt.year
+        _instance.M = dt.month
+        _instance.D = dt.day
+        _instance.h = dt.hour
+        _instance.m = dt.min
+        _instance.s = dt.sec
+    else
+        error("arg must be table type")
+    end
 
-local J2000 = _M.J2000
-local dts = _M.dts
+    setmetatable(_instance, {__index = self})
+    return _instance
 
+end
 
 local function getIntPart(x)
     if x <= 0 then
@@ -55,7 +71,7 @@ local function round(x,n)
     return z
 end
 
-function _M.int2(v)
+function JDatetime:int2(v)
     local value = math.floor(v)
     if(value < 0) then
         return value + 1
@@ -64,42 +80,43 @@ function _M.int2(v)
     end
 end
 
-function _M.dt_ext(y,jsd)
+function JDatetime:dt_ext(y,jsd)
     local dy = (y - 1820)/(100-0.0)
     return jsd*dy*dy - 20
 end
 
-function _M.dt_calc(y)
-    --È¡dtsµÄ×îºóÁ½¸öÔªËØÖµ,t0ÊÇ×îºóÒ»¸öÔªËØ,y0ÊÇµ¹ÊıµÚ¶ş¸öÔªËØ
-    local y0 = dts[#dts-1]
-    local t0 = dts[#dts]
+function JDatetime:dt_calc(y)
+    --å–dtsçš„æœ€åä¸¤ä¸ªå…ƒç´ å€¼,t0æ˜¯æœ€åä¸€ä¸ªå…ƒç´ ,y0æ˜¯å€’æ•°ç¬¬äºŒä¸ªå…ƒç´ 
+    local y0 = self.dts[#(self.dts)-1]
+    local t0 = self.dts[#(self.dts)]
+
     if y >= y0 then
         local jsd = 31
         if y > (y0 + 100) then
-            return dt_ext(y,jsd)
+            return self:dt_ext(y,jsd)
         end
 
-        local v = dt_ext(y,jsd)
-        local dv = dt_ext(y0,jsd) - t0
+        local v = self:dt_ext(y,jsd)
+        local dv = self:dt_ext(y0,jsd) - t0
         return (v - dv*(y0 + 100 - y)/(100 - 0.0))
     end
 
-    local i = 1  --Êı×éÏÂ±ê´Ó1¿ªÊ¼
-    while y >= dts[i+5] do
+    local i = 1  --æ•°ç»„ä¸‹æ ‡ä»1å¼€å§‹
+    while y >= self.dts[i+5] do
         i = i + 5
     end
 
-    local t1 = (y - dts[i])/(dts[i+5] - dts[i] - 0.0) * 10
+    local t1 = (y - self.dts[i])/(self.dts[i+5] - self.dts[i] - 0.0) * 10
     local t2 = t1*t1
     local t3 = t2*t1
 
-    return dts[i+1] + dts[i+2]*t1 + dts[i+3]*t2 + dts[i+4]*t3
+    return self.dts[i+1] + self.dts[i+2]*t1 + self.dts[i+3]*t2 + self.dts[i+4]*t3
 
 end
 
---¼ÆËãÊÀ½çÊ±ÓëÔ­×ÓÊ±Ö®²î,´«ÈëÄê
-function _M.deltatT(y)
-    local d = dts
+--è®¡ç®—ä¸–ç•Œæ—¶ä¸åŸå­æ—¶ä¹‹å·®,ä¼ å…¥å¹´
+function JDatetime:deltatT(y)
+    local d = self.dts
     local i = 1
     while i < (100 + 1) do
         if (y < d[i + 5] or (i == (95 + 1))) then
@@ -115,119 +132,117 @@ function _M.deltatT(y)
     return round(d[i + 1] + d[i + 2] * t1 + d[i + 3] * t2 + d[i + 4] * t3, 15)
 end
 
-function _M.dt_T2(jd)
-    return _M.deltatT(jd / 365.2425 + 2000) / 86400.0
+function JDatetime:dt_T2(jd)
+    return self:deltatT(jd / 365.2425 + 2000) / 86400.0
 end
 
-function _M.deltatT2(jd)
-    --´«ÈëÈåÂÔÈÕ(J2000ÆğËã),¼ÆËãUTCÓëÔ­×ÓÊ±µÄ²î(µ¥Î»:ÈÕ)
-    return _M.deltatT(jd / 365.2425 + 2000) / 86400.0
+function JDatetime:deltatT2(jd)
+    --ä¼ å…¥å„’ç•¥æ—¥(J2000èµ·ç®—),è®¡ç®—UTCä¸åŸå­æ—¶çš„å·®(å•ä½:æ—¥)
+    return self:deltatT(jd / 365.2425 + 2000) / 86400.0
 end
 
-function _M.toJD(dt,UTC)
-    local y = dt.year
-    local m = dt.month
+function JDatetime:toJD(UTC)
+    local y = self.Y
+    local m = self.M
     local n = 0
     if (m <= 2) then
         m = m + 12
         y = y - 1
     end
 
-    --ÅĞ¶ÏÊÇ·ñÎª¸ñÀï¸ßÀûÀúÈÕ1582*372+10*31+15
-    if (dt.year * 372 + dt.month * 31 + dt.day >= 588829) then
-        n = _M.int2(y / 100)
-        n = 2 - n + _M.int2(n / 4)  --¼Ó°ÙÄêÈò
+    --åˆ¤æ–­æ˜¯å¦ä¸ºæ ¼é‡Œé«˜åˆ©å†æ—¥1582*372+10*31+15
+    if (self.Y * 372 + self.M * 31 + self.D >= 588829) then
+        n = self:int2(y / 100)
+        n = 2 - n + self:int2(n / 4)  --åŠ ç™¾å¹´é—°
     end
 
-    n = n + _M.int2(365.2500001 * (y + 4716))  --¼ÓÉÏÄêÒıÆğµÄÆ«ÒÆÈÕÊı
-    n = n + _M.int2(30.6 * (m + 1)) + dt.day   --¼ÓÉÏÔÂÒıÆğµÄÆ«ÒÆÈÕÊı¼°ÈÕÆ«ÒÆÊı
-    n = n + ((dt.second / (60-0.0) + dt.minute) / (60-0.0) + dt.hour) / (24-0.0) - 1524.5
+    n = n + self:int2(365.2500001 * (y + 4716))  --åŠ ä¸Šå¹´å¼•èµ·çš„åç§»æ—¥æ•°
+    n = n + self:int2(30.6 * (m + 1)) + self.D   --åŠ ä¸Šæœˆå¼•èµ·çš„åç§»æ—¥æ•°åŠæ—¥åç§»æ•°
+    n = n + ((self.s / (60-0.0) + self.m) / (60-0.0) + self.h) / (24-0.0) - 1524.5
 
     if (1 == UTC) then
-        return n + _M.dt_T2(n - J2000)
+        return n + self:dt_T2(n - self.J2000)
     end
 
     return n
 
 end
 
-function _M.setFromJD(jd, UTC)
-    local dt = {}
-
+function JDatetime:setFromJD(jd, UTC)
     if (1 == UTC) then
-        jd = jd - _M.dt_T2(jd - J2000)
+        jd = jd - self:dt_T2(jd - self.J2000)
     end
     jd = jd + 0.5
-    local A  = _M.int2(jd)
+    local A  = self:int2(jd)
     local F = jd - A
     local D
 
-    --DÈ¡µÃÈÕÊıµÄÕûÊı²¿·İA¼°Ğ¡Êı²¿·ÖF
+    --Då–å¾—æ—¥æ•°çš„æ•´æ•°éƒ¨ä»½AåŠå°æ•°éƒ¨åˆ†F
     if (A > 2299161) then
-        D = _M.int2((A - 1867216.25) / 36524.25)
-        A = A + 1 + D - _M.int2(D / 4)
+        D = self:int2((A - 1867216.25) / 36524.25)
+        A = A + 1 + D - self:int2(D / 4)
     end
 
-    A = A + 1524  --ÏòÇ°ÒÆ4ÄêÁã2¸öÔÂ
-    dt.year = getIntPart(_M.int2((A - 122.1) / 365.25))
-    D = A - _M.int2(365.25 * dt.year)  --È¥³ıÕûÄêÈÕÊıºóÓàÏÂÈÕÊı
-    dt.month = getIntPart(_M.int2(D / 30.6001))  --ÔÂÊı
-    dt.day = getIntPart(D - _M.int2(dt.month * 30.6001))  --È¥³ıÕûÔÂÈÕÊıºóÓàÏÂÈÕÊı
-    dt.year = dt.year - 4716
-    dt.month = dt.month - 1
+    A = A + 1524  --å‘å‰ç§»4å¹´é›¶2ä¸ªæœˆ
+    self.Y = getIntPart(self:int2((A - 122.1) / 365.25))
+    D = A - self:int2(365.25 * self.Y)  --å»é™¤æ•´å¹´æ—¥æ•°åä½™ä¸‹æ—¥æ•°
+    self.M = getIntPart(self:int2(D / 30.6001))  --æœˆæ•°
+    self.D = getIntPart(D - self:int2(self.M * 30.6001))  --å»é™¤æ•´æœˆæ—¥æ•°åä½™ä¸‹æ—¥æ•°
+    self.Y = self.Y - 4716
+    self.M = self.M - 1
 
-    if (dt.month > 12) then
-        dt.month = dt.month - 12
+    if (self.M > 12) then
+        self.M = self.M - 12
     end
 
-    if (dt.month <= 2) then
-        dt.year = dt.year + 1
+    if (self.M <= 2) then
+        self.Y = self.Y + 1
     end
 
-    --ÈÕµÄĞ¡Êı×ªÎªÊ±·ÖÃë
+    --æ—¥çš„å°æ•°è½¬ä¸ºæ—¶åˆ†ç§’
     F = F * 24
-    dt.hour = getIntPart(_M.int2(F))
-    F = F - dt.hour
+    self.h = getIntPart(self:int2(F))
+    F = F - self.h
     F = F * 60
-    dt.minute = getIntPart(_M.int2(F))
-    F = F - dt.minute
+    self.m = getIntPart(self:int2(F))
+    F = F - self.m
     F = F * 60
-    dt.second = F
-    local timeVal = os.time{year = dt.year,month = dt.month,day = dt.day,hour = dt.hour,min = dt.minute,sec = dt.second}
+    self.s = F
+    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
 
     local timeStr = os.date('%Y-%m-%d %H:%M:%S',timeVal)
-    return timeStr,dt
+    return timeStr
 end
 
-function _M.Dint_dec(jd, shiqu, int_dec)
-    --[[  Ëã³ö:jd×ªµ½µ±µØUTCºó,UTCÈÕÊıµÄÕûÊı²¿·Ö»òĞ¡Êı²¿·Ö
-          »ùÓÚJ2000Á¦Ñ§Ê±jdµÄÆğËãµãÊÇ12:00:00Ê±,ËùÒÔÌøÈÕÊ±¿Ì·¢ÉúÔÚ12:00:00,ÕâÓëÈÕÀú¼ÆËã·¢ÉúÃ¬¶Ü
-          °Ñjd¸ÄÕıÎª00:00:00ÆğËã,ÕâÑùÈåÂÔÈÕµÄÌøÈÕ¶¯×÷¾ÍÓëÈÕÆÚµÄÌøÈÕÍ¬²½
-          ¸ÄÕı·½·¨Îªjd=jd+0.5-deltatT+shiqu/24
-          °ÑÈåÂÔÈÕµÄÆğµãÒÆ¶¯-0.5(¼´Ç°ÒÆ12Ğ¡Ê±)
-          Ê½ÖĞshiquÊÇÊ±Çø,±±¾©µÄÆğËãµãÊÇ-8Ğ¡Ê±,shiquÈ¡8]]--
+function JDatetime:Dint_dec(jd, shiqu, int_dec)
+    --[[  ç®—å‡º:jdè½¬åˆ°å½“åœ°UTCå,UTCæ—¥æ•°çš„æ•´æ•°éƒ¨åˆ†æˆ–å°æ•°éƒ¨åˆ†
+          åŸºäºJ2000åŠ›å­¦æ—¶jdçš„èµ·ç®—ç‚¹æ˜¯12:00:00æ—¶,æ‰€ä»¥è·³æ—¥æ—¶åˆ»å‘ç”Ÿåœ¨12:00:00,è¿™ä¸æ—¥å†è®¡ç®—å‘ç”ŸçŸ›ç›¾
+          æŠŠjdæ”¹æ­£ä¸º00:00:00èµ·ç®—,è¿™æ ·å„’ç•¥æ—¥çš„è·³æ—¥åŠ¨ä½œå°±ä¸æ—¥æœŸçš„è·³æ—¥åŒæ­¥
+          æ”¹æ­£æ–¹æ³•ä¸ºjd=jd+0.5-deltatT+shiqu/24
+          æŠŠå„’ç•¥æ—¥çš„èµ·ç‚¹ç§»åŠ¨-0.5(å³å‰ç§»12å°æ—¶)
+          å¼ä¸­shiquæ˜¯æ—¶åŒº,åŒ—äº¬çš„èµ·ç®—ç‚¹æ˜¯-8å°æ—¶,shiquå–8]]--
 
-    local u = jd + 0.5 - _M.dt_T2(jd) + shiqu / (24 - 0.0)
+    local u = jd + 0.5 - self:dt_T2(jd) + shiqu / (24 - 0.0)
     if (1 == int_dec) then
-        return getIntPart(math.floor(u))  --·µ»ØÕûÊı²¿·Ö
+        return getIntPart(math.floor(u))  --è¿”å›æ•´æ•°éƒ¨åˆ†
     else
-        return u - math.floor(u)          --·µ»ØĞ¡Êı²¿·Ö
+        return u - math.floor(u)          --è¿”å›å°æ•°éƒ¨åˆ†
     end
 
 end
 
-function _M.cmp_date(dt,t)
-    if t[1] < dt.year then
+function JDatetime:cmp_date(t)
+    if t[1] < self.Y then
         return 0
-    elseif t[1] > dt.year then
+    elseif t[1] > self.Y then
         return 1
     else
-        if t[2] < dt.month then
+        if t[2] < self.M then
             return 0
-        elseif t[2] > dt.month then
+        elseif t[2] > self.M then
             return 1
         else
-            if t[3] < dt.day then
+            if t[3] < self.D then
                 return 0
             else
                 return 1
@@ -237,22 +252,84 @@ function _M.cmp_date(dt,t)
 
 end
 
-function _M.GetDatetime(dt)
-    local timeVal = os.time{year = dt.year,month = dt.month,day = dt.day,hour = dt.hour,min = dt.minute,sec = dt.second}
+function JDatetime:GetDatetime()
+    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
 
     local timeStr = os.date('%Y-%m-%d %H:%M:%S',timeVal)
     return timeStr
 
 end
 
-function _M.GetDate(dt)
-    local timeVal = os.time{year = dt.year,month = dt.month,day = dt.day,hour = dt.hour,min = dt.minute,sec = dt.second}
+function JDatetime:GetDate()
+    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
 
     local timeStr = os.date('%Y-%m-%d',timeVal)
     return timeStr
 end
 
+local function JDatetime_test1()
+    local dt = {}
+    dt.year = 2017
+    dt.month = 8
+    dt.day   = 21
+    dt.hour = 20
+    dt.min = 12
+    dt.sec  = 3
 
-return _M
+    local jdate = JDatetime:new(dt)
+    print('test function dt_ext....')
+    local res
+    res = jdate:dt_ext(2017,20)
+    print('the function dt_ext result is:',res)
 
 
+    print('test function dt_calc....')
+    res = jdate:dt_calc(2017)
+    print('the function dt_calc result is:',res)
+
+    print('test function toJD....')
+    local result1 = jdate:toJD(1)
+    print('the function toJD test1 result is:',result1)
+    local result2 = jdate:toJD(0)
+    print('the function toJD test2 result is:',result2)
+
+    print('test function setFromJD....')
+    local res = jdate:setFromJD(result1,1)
+    print('the function setFromJD test1 result is: %s',string.format(res))
+    local res = jdate:setFromJD(result2,0)
+    print('the function setFromJD test2 result is: %s',string.format(res))
+
+    print('test function Dint_dec....')
+    local res = jdate:Dint_dec(result1,8,1)
+    print('the function Dint_dec test1 result is: %s',string.format(res))
+    local res = jdate:Dint_dec(result2,8,0)
+    print('the function Dint_dec test2 result is: %s',string.format(res))
+
+    return 0
+end
+
+local function JDatetime_test2()
+    --dt = datetime.datetime.strptime("2017-08-07 10:08:12", "%Y-%m-%d %H:%M:%S")
+    dt = {}
+    dt.year = 2017
+    dt.month = 8
+    dt.day   = 7
+    dt.hour = 10
+    dt.min = 8
+    dt.sec  = 12
+
+    local Y = dt.year
+    local jdate = JDatetime:new(dt)
+    local t1 = 365.2422*(Y - 1999) - 50
+    print('t1 =',t1)
+    local dongzhi = 6564.18685031
+    print('dongzhi =',dongzhi)
+
+    local t = jdate:setFromJD(dongzhi+jdate.J2000 + 8/(24-0.0),1)
+    print(t)
+end
+
+
+--local a = JDatetime_test1()
+--local b = JDatetime_test2()
+return JDatetime

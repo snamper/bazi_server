@@ -1,4 +1,5 @@
 local JDatetime = require "JDatetime"
+local
 _M = {}
 
 --#========角度变换===============
@@ -25,8 +26,6 @@ function _M.rad2rrad(v)
 
     return value
 end
-
-
 
 local XL00 = {10000000000,
 20,578,920,1100,1124,1136,1148,1217,1226,1229,1229,1229,1229,1937,2363,2618,2633,2660,2666,
@@ -152,6 +151,8 @@ function _M.calc_AST(date,L)
     bd.setFromJD(BD,0)
     return bd.GetDatetime()
 end
+
+return _M
 
 
 
