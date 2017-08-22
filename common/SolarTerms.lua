@@ -421,7 +421,7 @@ function _M.moonCal(jd)
     llr[1] = llr[1] + M1n[1] + M1n[2] * t1 + M1n[3] * t2 + M1n[4] * t3 + M1n[5] * t4
 
     llr[1] = _M.rad2mrad(llr[1])  --# 地心Date黄道原点坐标(不含岁差)
-    local res = addPrece(jd, llr)  --# 补岁差
+    local res = _M.addPrece(jd, llr)  --# 补岁差
     return res
 end
 
@@ -504,7 +504,7 @@ function _M.jiaoCal(t1, jiao, lx)
         end
 
         t = t1 - v1 / (k - 0.0)
-        v = jiaoCai(lx, t, jiaodu)  --# 直线逼近法求根(直线方程的根)
+        v = _M.jiaoCai(lx, t, jiaodu)  --# 直线逼近法求根(直线方程的根)
 
         if (v > 1) then
             v = v - 2 * math.pi  --# 一次逼近后,v1就已接近0,如果很大,则应减1周
@@ -607,16 +607,46 @@ local dts = {-4000, 108371.7, -13036.80, 392.000,  0.0000,
 
 --# 取整数部分,向零取整
 function _M.int2(v)
-    return JDatetime.int2(v)
+    local value = getIntPart(math.floor(v))
+    if(value < 0) then
+        return value + 1
+    else
+        return value
+    end
 end
 
 
 function _M.dt_ext(y,jsd)
-    return JDatetime.dt_ext(y,jsd)
+    local dy = (y - 1820)/(100-0.0)
+    return jsd*dy*dy - 20
 end
 
 function _M.dt_calc(y)
-    return JDatetime.dt_calc(y)
+    --取dts的最后两个元素值,t0是最后一个元素,y0是倒数第二个元素
+    local y0 = dts[#dts-1]
+    local t0 = dts[#dts]
+
+    if y >= y0 then
+        local jsd = 31
+        if y > (y0 + 100) then
+            return _M.dt_ext(y,jsd)
+        end
+
+        local v = _M.dt_ext(y,jsd)
+        local dv = _M.dt_ext(y0,jsd) - t0
+        return (v - dv*(y0 + 100 - y)/(100 - 0.0))
+    end
+
+    local i = 1  --数组下标从1开始
+    while y >= dts[i+5] do
+        i = i + 5
+    end
+
+    local t1 = (y - dts[i])/(dts[i+5] - dts[i] - 0.0) * 10
+    local t2 = t1*t1
+    local t3 = t2*t1
+
+    return dts[i+1] + dts[i+2]*t1 + dts[i+3]*t2 + dts[i+4]*t3
 end
 
 function _M.dt_T2(jd)
@@ -653,8 +683,8 @@ local function datetime(year,month,day,hour,minute,second)
     dt.month = month
     dt.day  = day
     dt.hour = hour
-    dt.minute = minute
-    dt.second = second
+    dt.min = minute
+    dt.sec = second
     return dt
 end
 
@@ -693,8 +723,11 @@ function _M.bk_calc(bd,lifa)
 
     local startTime = datetime(Y,M,21,1,0)
     local endTime = datetime(Y+1,M,21,1,0)
-    local stjd = JDatetime.toJD(startTime,0) - J2000
-    local edjd = JDatetime.toJD(endTime,0) - J2000
+    local jStartDate = JDatetime:new(startTime)
+    local jEndDate   = JDatetime:new(endTime)
+
+    local stjd = jStartDate:toJD(0) - J2000
+    local edjd = jEndDate:toJD(0) - J2000
 
     local pzq = _M.qi_accurate2(stjd,0,120) + J2000
     local zq = _M.qi_accurate2(edjd,0,120) + J2000
@@ -704,19 +737,25 @@ function _M.bk_calc(bd,lifa)
 end
 
 function _M.lichun_calc(dt)
-    local jd = JDatetime.toJD(dt,0)
-    local jq = _M.qi_accurate2(jd-J2000,0,120) + J2000
-    local timeStr = JDatetime.setFromJD(jq,0)
-    return timeStr
+    local jd = JDatetime:new(dt)
+
+    local jq = _M.qi_accurate2(jd:toJD(0)-J2000,0,120) + J2000
+    jd:setFromJD(jq,0)
+    local retDate,timeStr = jd:GetDatetime()
+    return retDate
 end
 
 function _M.Lunar2Solar(bd,isLeapMonth)
-    local Y,M,D = bd[1],bd[2],bd[3]
-    local curTimeStr = os.date("%Y-%m-%d %H:%M:%S", os.time())
-    local dt = strToTime(curTimeStr)
+    local Y = bd[1]
+    local M = bd[2]
+    local D = bd[3]
+
+    local nowTable = os.date('*t')
+    local jdate = JDatetime:new(nowTable)
     local t1 = 365.2422*(Y - 1999) - 50
     local zq = {}
     local hs = {}
+
 
     if M < 11 then
         t1 =  365.2422*(Y - 2000) - 50
@@ -727,7 +766,7 @@ function _M.Lunar2Solar(bd,isLeapMonth)
         table.insert(zq,_M.jiaoCal(t1 + i * 30.4, i * 30 - 90, 0))
     end
 
-    dongZhiJia1 = zq[1] + 1 - JDatetime.Dint_dec(zq[1], 8, 0)  --# 冬至过后的第一天0点的儒略日数
+    dongZhiJia1 = zq[1] + 1 - jdate:Dint_dec(zq[1], 8, 0)  --# 冬至过后的第一天0点的儒略日数
 
     table.insert(hs,_M.jiaoCal(dongZhiJia1, 0, 1))    --# 首月结束的日月合朔时刻
 
@@ -741,15 +780,16 @@ function _M.Lunar2Solar(bd,isLeapMonth)
     local C = {}
 
     for i = 1,14 do
-        table.insert(A,_M.jdate.Dint_dec(zq[i],8,1))
-        table.insert(C,_M.jdate.Dint_dec(hs[i],8,1))
+        table.insert(A,jdate:Dint_dec(zq[i],8,1))
+        table.insert(C,jdate:Dint_dec(hs[i],8,1))
     end
 
-    table.insert(C,_M.jdate.Dint_dec(hs[15],8,1))
+    table.insert(C,jdate:Dint_dec(hs[15],8,1))
 
     local tot = 12
     local nun = -5
     local yn = {11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10}
+
     --# 闰月分析
     if (C[12 + 1] <= A[12 + 1]) then
         yn[12 + 1] = 10
@@ -801,12 +841,19 @@ function _M.Lunar2Solar(bd,isLeapMonth)
         return 0,errstr
     end
 
-    local temp = C[mindx] + D - 1 + JDatetime.J2000 + 8/(24 - 0.0)
+    local temp = C[mindx] + D - 1 + jdate.J2000 + 8/(24 - 0.0)
 
-    local dateTimeStr,date = JDatetime.setFromJD(temp,1)
-    dateStr = JDatetime.GetDate(date)
+    local retTime,timeStr = jdate:setFromJD(temp,1)
+    retDate,dateStr = jdate:GetDate()
+    print(dateStr)
 
-    return 1,dateStr
+    return 1,retDate
 end
 
+function _M.test()
+    local dt = {2017,8,7,10,8,12}
+    local res, resStr = _M.Lunar2Solar(dt,1)
+    print(resStr)
+end
+a = _M.test()
 return _M

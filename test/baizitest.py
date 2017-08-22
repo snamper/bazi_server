@@ -1,5 +1,8 @@
 # -*- coding:utf-8 -*-
 import datetime, SolarTerms, JDatetime
+import ast
+import math
+
 
 if __name__ == '__main__':
     '''
@@ -19,6 +22,8 @@ if __name__ == '__main__':
     #print SolarTerms.rad2str(40,0)
     '''
 
+    '''
+    #test for JDatetime.py
     dt = datetime.datetime.strptime("2017-08-21 20:12:03", "%Y-%m-%d %H:%M:%S")
 
     jdate = JDatetime.JDatetime(dt)
@@ -49,4 +54,30 @@ if __name__ == '__main__':
     print 'the function Dint_dec test1 result is: %s'%res
     res = jdate.Dint_dec(result2,8,0)
     print 'the function Dint_dec test2 result is: %s' %res
+    '''
+
+    '''
+    #test for ast.py
+    print 'test function rad2mrad....'
+    result = ast.rad2mrad(1.5*math.pi)
+    print 'the function rad2mrad test1 result is:%s' %result
+
+    result = ast.rad2mrad(-1.37*math.pi)
+    print 'the function rad2mrad test2 result is:%s' %result
+
+    print 'test function rad2rrad....'
+    result = ast.rad2rrad(1.5*math.pi)
+    print 'the function rad2rrad test1 result is:%s' %result
+    result = ast.rad2rrad(-1.37*math.pi)
+    print 'the function rad2rrad test2 result is:%s' %result
+
+    dt = datetime.datetime.strptime("2017-08-22 18:04:56", "%Y-%m-%d %H:%M:%S")
+    print 'test function calc_AST....'
+    result = ast.calc_AST(dt,120)
+    print 'the function calc_AST test1 result is:%s' %result
+    '''
+
+    bd = [2017,8,7,10,8,12]
+    res, resStr = SolarTerms.Lunar2Solar(bd,1)
+    print res,resStr
 

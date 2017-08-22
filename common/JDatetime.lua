@@ -209,9 +209,9 @@ function JDatetime:setFromJD(jd, UTC)
     F = F * 60
     self.s = F
     local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
-
+    local retTime = {year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
     local timeStr = os.date('%Y-%m-%d %H:%M:%S',timeVal)
-    return timeStr
+    return retTime,timeStr
 end
 
 function JDatetime:Dint_dec(jd, shiqu, int_dec)
@@ -254,9 +254,9 @@ end
 
 function JDatetime:GetDatetime()
     local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
-
+    local retTime = {year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
     local timeStr = os.date('%Y-%m-%d %H:%M:%S',timeVal)
-    return timeStr
+    return retTime,timeStr
 
 end
 
@@ -264,7 +264,8 @@ function JDatetime:GetDate()
     local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
 
     local timeStr = os.date('%Y-%m-%d',timeVal)
-    return timeStr
+    local retDay = {year = self.Y,month = self.M,day = self.D}
+    return retDay,timeStr
 end
 
 local function JDatetime_test1()
@@ -310,7 +311,7 @@ end
 
 local function JDatetime_test2()
     --dt = datetime.datetime.strptime("2017-08-07 10:08:12", "%Y-%m-%d %H:%M:%S")
-    dt = {}
+    local dt = {}
     dt.year = 2017
     dt.month = 8
     dt.day   = 7

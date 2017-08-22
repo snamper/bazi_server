@@ -1,5 +1,7 @@
 local JDatetime = require "JDatetime"
-local
+local luatz = require "luatz"
+
+
 _M = {}
 
 --#========角度变换===============
@@ -142,15 +144,49 @@ function _M.mst_ast(t)
 end
 
 function _M.calc_AST(date,L)
-    deltaH = datetime.timedelta(hours=8)
-    utcbd = date-deltaH
-    bd = JDatetime.JDatetime(utcbd)
-    BD = bd.toJD(0)
-    JD = bd.toJD(1) - bd.J2000
-    BD += mst_ast(JD/36525) + L/(360-0.0)
-    bd.setFromJD(BD,0)
-    return bd.GetDatetime()
+    local deltaH = 8
+    local dt = date:clone()
+    dt.hour = dt.hour - deltaH
+    dt:normalise()
+    local utcbd = dt
+    local bd = JDatetime:new(utcbd)
+    local BD = bd:toJD(0)
+    --print(BD)
+    local JD = bd:toJD(1) - bd.J2000
+    --print(JD)
+    BD = BD + _M.mst_ast(JD/36525) + L/(360-0.0)
+    --print(BD)
+    bd:setFromJD(BD,0)
+    return bd:GetDatetime()
 end
+
+local function ts2tt ( ts )
+    return luatz.timetable.new_from_timestamp ( ts )
+end
+
+function _M.test()
+    print('test function rad2mrad....')
+    local result = _M.rad2mrad(1.5*math.pi)
+    print('the function rad2mrad test1 result is:',result)
+    local result = _M.rad2mrad(-1.37*math.pi)
+    print('the function rad2mrad test2 result is:',result)
+
+    print('test function rad2rrad....')
+    local result = _M.rad2rrad(1.5*math.pi)
+    print('the function rad2rrad test1 result is:',result)
+    local result = _M.rad2rrad(-1.37*math.pi)
+    print('the function rad2rrad test2 result is:',result)
+
+    local x = luatz.timetable.new(2017,8,22,18,4,56)
+
+    print('test function calc_AST....')
+    local result = _M.calc_AST(x,120)
+    print('the function calc_AST test1 result is:',result)
+
+
+end
+
+--a = _M.test()
 
 return _M
 
