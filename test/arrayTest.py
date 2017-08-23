@@ -107,9 +107,28 @@ if __name__ == '__main__':
     print deltatT(1700)
     print deltatT(2020)
     '''
+    '''
     dt = datetime.datetime.strptime("2017-08-07 10:08:12", "%Y-%m-%d %H:%M:%S")
     print toJD(dt, 0)
     print toJD(dt, 1)
+    '''
+    dt1= datetime.datetime(2016,3,2,10,2,33)
+    dt2= datetime.datetime(2017,8,22,18,4,56)
+
+    days = (dt2-dt1).days
+    minutes = ((dt2-dt1).seconds)/60
+
+    deltaH = ((minutes%60)*2)%24
+    deltaD = (minutes/60)*5 + ((minutes%60)*2)/24
+    deltaM = (days%3)*4 + deltaD/30
+    deltaD %= 30
+    deltaY = (days/3) + deltaM/12
+    deltaM %= 12
+
+    print deltaH
+    print deltaD
+    print deltaM
+    print deltaY
 
 
 

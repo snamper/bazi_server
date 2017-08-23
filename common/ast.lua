@@ -144,8 +144,9 @@ function _M.mst_ast(t)
 end
 
 function _M.calc_AST(date,L)
+    local x = luatz.timetable.new(date.year,date.month,date.day,date.hour,date.min,date.sec)
     local deltaH = 8
-    local dt = date:clone()
+    local dt = x:clone()
     dt.hour = dt.hour - deltaH
     dt:normalise()
     local utcbd = dt
@@ -177,7 +178,7 @@ function _M.test()
     local result = _M.rad2rrad(-1.37*math.pi)
     print('the function rad2rrad test2 result is:',result)
 
-    local x = luatz.timetable.new(2017,8,22,18,4,56)
+    local x = {year = 2017,month = 8,day = 22,hour = 18,min = 4, sec= 56}
 
     print('test function calc_AST....')
     local result = _M.calc_AST(x,120)
@@ -186,7 +187,7 @@ function _M.test()
 
 end
 
---a = _M.test()
+a = _M.test()
 
 return _M
 
