@@ -766,7 +766,7 @@ function _M.Lunar2Solar(bd,isLeapMonth)
         table.insert(zq,_M.jiaoCal(t1 + i * 30.4, i * 30 - 90, 0))
     end
 
-    dongZhiJia1 = zq[1] + 1 - jdate:Dint_dec(zq[1], 8, 0)  --# 冬至过后的第一天0点的儒略日数
+    local dongZhiJia1 = zq[1] + 1 - jdate:Dint_dec(zq[1], 8, 0)  --# 冬至过后的第一天0点的儒略日数
 
     table.insert(hs,_M.jiaoCal(dongZhiJia1, 0, 1))    --# 首月结束的日月合朔时刻
 
