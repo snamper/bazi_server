@@ -1,7 +1,7 @@
 local JDatetime = require "JDatetime"
 local ast = require "ast"
 
-_M = {}
+local _M = {}
 _M.rad = 180 * 3600 / math.pi  -- 每弧度的角秒数
 _M.RAD = 180 / math.pi  -- 每弧度的角度数
 _M.J2000 = 2451545  -- 2000年前儒略日数(2000-1-1 12:00:00格林威治平时)
@@ -361,7 +361,7 @@ function _M.earCal(jd)
 
     llr[1] = _M.rad2mrad(llr[1])
 
-    print(llr)
+    --print(llr)
     return llr
 end
 
@@ -564,6 +564,15 @@ function _M.gxc_sunLon(t)
 end
 
 function _M.S_aLon(t,n)
+    --[[
+    local a = _M.E_Lon(t,n)
+    local b = _M.nutationLon2(t)
+    local c = _M.gxc_sunLon(t)
+    print('a =',a)
+    print('b =',b)
+    print('c =',c)
+    ]]--
+
     return _M.E_Lon(t,n) + _M.nutationLon2(t) + _M.gxc_sunLon(t) + math.pi
 end
 
@@ -576,10 +585,13 @@ end
 function _M.S_aLon_t(W)
     local v = 628.3319653318
     local t = ( W - 1.75347 - math.pi )/v
+
     v = _M.E_v(t)
     t = t + ( W - _M.S_aLon(t,10) )/v
+
     v = _M.E_v(t)
     t = t + ( W - _M.S_aLon(t,-1) )/v
+
     return t
 end
 
@@ -655,6 +667,7 @@ end
 
 function _M.qi_accurate(W,astflg,L)
     local d = _M.S_aLon_t(W)
+
     local t = d*36525
     if (astflg == 1) then
         return t - _M.dt_T2(t) + ast.mst_ast(d) + L/360.0
@@ -668,6 +681,7 @@ function _M.qi_accurate2(jd,astflg,L)
     local w = math.floor((jd+293)/365.2422*24)*d
 
     local a = _M.qi_accurate(w,astflg,L)
+
     if (a-jd) > 5 then
         return _M.qi_accurate(w-d,astflg,L)
     elseif (a-jd) < -5 then
@@ -731,6 +745,7 @@ function _M.bk_calc(bd,lifa)
 
     local pzq = _M.qi_accurate2(stjd,0,120) + J2000
     local zq = _M.qi_accurate2(edjd,0,120) + J2000
+
     local k = (zq - pzq)/(12 - 0.0)
     local b = pzq + k/(2 - 0.0)
     return b,k
@@ -851,9 +866,36 @@ function _M.Lunar2Solar(bd,isLeapMonth)
 end
 
 function _M.test()
-    local dt = {2017,8,7,10,8,12}
+    --[[
+    local dt = {1984,2,10,8,5,1}
     local res, resStr = _M.Lunar2Solar(dt,1)
     print(resStr)
+
+    local date = datetime(1984,2,10,8,5,1)
+    ]]--
+
+    --[[
+    local b,k = _M.bk_calc(date,11)
+    print(b)
+    print(k)
+    ]]--
+
+
+    local a = -6038.45833333
+    local b = -5672.45833333
+    local pzq = _M.qi_accurate2(a,0,120) + J2000
+    local zq = _M.qi_accurate2(b,0,120) + J2000
+
+
+    --[[
+    local t =-0.165298708922
+    local n = 10
+    print('res1 = ',_M.E_Lon(t,n))
+
+    local t =-0.16529872834533
+    local n = 10
+    print('res2 = ',_M.E_Lon(t,n))
+    ]]--
 end
 --a = _M.test()
 return _M

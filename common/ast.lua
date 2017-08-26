@@ -2,7 +2,7 @@ local JDatetime = require "JDatetime"
 local luatz = require "luatz"
 
 
-_M = {}
+local _M = {}
 
 --#========角度变换===============
 local rad = 180 * 3600 / math.pi  --# 每弧度的角秒数
@@ -78,12 +78,14 @@ function _M.XL0_calc(xt,zn,t,n)
     --lua下标从1开始
     local N0 = XL00[pn+1 + 1] - XL00[pn + 1]
 
-    local N
+    local N,n1,n2,n0,c
     for i = 1,6 do
-        local n1 = XL00[pn+i]
-        local n2 = XL00[pn+1+i]
-        local n0 = n2 - n1
         while true do
+            n1 = XL00[pn+i]
+            n2 = XL00[pn+1+i]
+
+            n0 = n2 - n1
+
             if n0 == 0 then
                 break
             end
@@ -99,7 +101,8 @@ function _M.XL0_calc(xt,zn,t,n)
                     N = n2
                 end
             end
-            local c = 0
+
+            c = 0
             for j = n1,N,3 do
                 c = c + XL00[j+1] * math.cos(XL00[j+1+1] + t*XL00[j+2+1])
             end
@@ -133,6 +136,7 @@ end
 
 function _M.mst_ast(t)
     local L = (1753470142 + 628331965331.8*t + 5296.74*t*t)/(1000000000 - 0.0)  + math.pi
+
     local z = {}
     local E = (84381.4088 -46.836051*t)/rad
     z[1] = _M.XL0_calc(0,0,t,5)+math.pi
@@ -140,6 +144,7 @@ function _M.mst_ast(t)
 
     z = _M.llrConv(z,E)
     L = _M.rad2rrad(L - z[1])
+
     return L/(math.pi * 2)
 end
 
@@ -152,12 +157,11 @@ function _M.calc_AST(date,L)
     local utcbd = dt
     local bd = JDatetime:new(utcbd)
     local BD = bd:toJD(0)
-    --print(BD)
+
     local JD = bd:toJD(1) - bd.J2000
-    --print(JD)
     BD = BD + _M.mst_ast(JD/36525) + L/(360-0.0)
-    --print(BD)
     bd:setFromJD(BD,0)
+
     return bd:GetDatetime()
 end
 
@@ -178,16 +182,17 @@ function _M.test()
     local result = _M.rad2rrad(-1.37*math.pi)
     print('the function rad2rrad test2 result is:',result)
 
-    local x = {year = 2017,month = 8,day = 22,hour = 18,min = 4, sec= 56}
+    local x = {year = 1984,month = 2,day = 10,hour = 8,min = 5, sec= 1}
 
     print('test function calc_AST....')
-    local result = _M.calc_AST(x,120)
-    print('the function calc_AST test1 result is:',result)
+    --local result,res = _M.calc_AST(x,120)
+    local result,res= _M.calc_AST(x,120)
+    print('the function calc_AST test1 result is:',res)
 
 
 end
 
-a = _M.test()
+--a = _M.test()
 
 return _M
 

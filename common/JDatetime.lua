@@ -33,7 +33,7 @@ function JDatetime:new(dt)
         _instance.D = dt.day
         _instance.h = dt.hour
         _instance.m = dt.min
-        _instance.s = dt.sec
+        _instance.s = dt.sec or 0
     else
         error("arg must be table type")
     end
@@ -177,6 +177,7 @@ function JDatetime:setFromJD(jd, UTC)
     local F = jd - A
     local D
 
+
     --D取得日数的整数部份A及小数部分F
     if (A > 2299161) then
         D = self:int2((A - 1867216.25) / 36524.25)
@@ -190,6 +191,7 @@ function JDatetime:setFromJD(jd, UTC)
     self.D = getIntPart(D - self:int2(self.M * 30.6001))  --去除整月日数后余下日数
     self.Y = self.Y - 4716
     self.M = self.M - 1
+
 
     if (self.M > 12) then
         self.M = self.M - 12
@@ -207,9 +209,11 @@ function JDatetime:setFromJD(jd, UTC)
     self.m = getIntPart(self:int2(F))
     F = F - self.m
     F = F * 60
-    self.s = F
-    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
-    local retTime = {year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
+    self.s = getIntPart(F)
+
+
+    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m}
+    local retTime = {year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = 0}
     local timeStr = os.date('%Y-%m-%d %H:%M:%S',timeVal)
     return retTime,timeStr
 end
@@ -253,15 +257,15 @@ function JDatetime:cmp_date(t)
 end
 
 function JDatetime:GetDatetime()
-    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
-    local retTime = {year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
+    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m}
+    local retTime = {year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = 0}
     local timeStr = os.date('%Y-%m-%d %H:%M:%S',timeVal)
     return retTime,timeStr
 
 end
 
 function JDatetime:GetDate()
-    local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m,sec = self.s}
+    local timeVal = os.time{year = self.Y,month = self.M,day = self.D}
 
     local timeStr = os.date('%Y-%m-%d',timeVal)
     local retDay = {year = self.Y,month = self.M,day = self.D}

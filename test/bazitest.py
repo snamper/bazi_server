@@ -2,6 +2,7 @@
 import datetime, SolarTerms, JDatetime
 import ast
 import math
+import Bazi
 
 
 if __name__ == '__main__':
@@ -76,8 +77,27 @@ if __name__ == '__main__':
     result = ast.calc_AST(dt,120)
     print 'the function calc_AST test1 result is:%s' %result
     '''
-
+    '''
     bd = [2017,8,7,10,8,12]
     res, resStr = SolarTerms.Lunar2Solar(bd,1)
     print res,resStr
+    '''
 
+    dt = datetime.datetime(1984,2,10,8,5,1)
+    bz = Bazi.bazi(dt,0,0,120,11)
+    bz.Paipan()
+    res = bz.print_8zi()
+    print res
+    res = bz.Get8zi()
+    print res
+    res = bz.print_8zi()
+    print res
+
+    res = bz.SolarDaysFromBaseYear(dt)
+    print res
+
+    res = bz.GetJiaoYunDate()
+    print res
+
+    b,k = SolarTerms.bk_calc(dt,11)
+    print b,k
