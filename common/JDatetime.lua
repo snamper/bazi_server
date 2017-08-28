@@ -209,7 +209,7 @@ function JDatetime:setFromJD(jd, UTC)
     self.m = getIntPart(self:int2(F))
     F = F - self.m
     F = F * 60
-    self.s = getIntPart(F)
+    self.s = F
 
 
     local timeVal = os.time{year = self.Y,month = self.M,day = self.D,hour = self.h,min = self.m}

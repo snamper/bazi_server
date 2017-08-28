@@ -870,22 +870,21 @@ function _M.test()
     local dt = {1984,2,10,8,5,1}
     local res, resStr = _M.Lunar2Solar(dt,1)
     print(resStr)
-
-    local date = datetime(1984,2,10,8,5,1)
     ]]--
+    local date = datetime(1984,2,10,8,5,1)
 
-    --[[
+
+
     local b,k = _M.bk_calc(date,11)
     print(b)
     print(k)
-    ]]--
 
-
+    --[[
     local a = -6038.45833333
     local b = -5672.45833333
     local pzq = _M.qi_accurate2(a,0,120) + J2000
     local zq = _M.qi_accurate2(b,0,120) + J2000
-
+    ]]--
 
     --[[
     local t =-0.165298708922
