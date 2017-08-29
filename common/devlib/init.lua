@@ -15,7 +15,7 @@ WEBSERVER_conf      = require("core.config")
 WEBSERVER_redis     = require("dao.redis")
 WEBSERVER_mysql     = require("dao.mysql")
 
-local log          = require("util.log")
+local log           = require("util.log")
 WEBSERVER_log       = log:new(log.LEVEL.DEBUG)
 WEBSERVER_param     = require("util.param")
 WEBSERVER_table     = require("util.table")

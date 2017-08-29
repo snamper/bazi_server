@@ -3,9 +3,10 @@ local JDatetime = require "JDatetime"
 local SolarTerms = require "SolarTerms"
 local ast = require "ast"
 local luatz = require "luatz"
-local luabit = require "luabit"
+--local luabit = require("util.luabit")
+local luabit  = require "luabit"
 
-local baZi = {}
+local bazi = {}
 
 local function round(x,n)
     local n = n or 0
@@ -23,7 +24,11 @@ local function round(x,n)
     return z
 end
 
-function baZi:new(bd,gender,AST,lon,lifa)
+local function ts2tt ( ts )
+    return luatz.timetable.new_from_timestamp ( ts )
+end
+
+function bazi:new(bd,gender,AST,lon,lifa)
     local _instance = {}
 
     _instance.BaseYear = 1601
@@ -85,11 +90,11 @@ function baZi:new(bd,gender,AST,lon,lifa)
 
 end
 
-function baZi:isLeapYear(year)
+function bazi:isLeapYear(year)
     return (year%4 == 0) and (year%100 ~= 0) or (year%400 == 0)
 end
 
-function baZi:solarDaysFromBaseYear(date)
+function bazi:solarDaysFromBaseYear(date)
     local pd = {0,31,59,90,120,151,181,212,243,273,304,334}
     local delta = date.year - self.BaseYear
 
@@ -105,7 +110,7 @@ function baZi:solarDaysFromBaseYear(date)
     return offset - 1
 end
 
-function baZi:solar2Lunar(bd)
+function bazi:solar2Lunar(bd)
     local Y = bd.year
     local M = bd.month
     local D = bd.day
@@ -116,16 +121,18 @@ function baZi:solar2Lunar(bd)
     local hs = {}
     local dongzhi = SolarTerms.jiaoCal(t1,-90,0)
 
-    jdate.setFromJD(dongzhi+jdate.J2000 + 8/(24-0.0),1)
-    if jdate.cmp_date({Y,M,D}) == 0 then
+    jdate:setFromJD(dongzhi+jdate.J2000 + 8/(24-0.0),1)
+
+    if jdate:cmp_date({Y,M,D}) == 0 then
         t1 =  365.2422*(Y - 2000) - 50
     end
 
-    for i = 1,14 do
+    for i = 0,13 do
         table.insert(zq,SolarTerms.jiaoCal(t1 + i * 30.4, i * 30 - 90, 0))  --# 中气计算,冬至的太阳黄经是270度(或-90度)
     end
 
-    local dongZhiJia1 = zq[0 + 1] + 1 - jdate.Dint_dec(zq[0 + 1], 8, 0) --# 冬至过后的第一天0点的儒略日数
+    local dongZhiJia1 = zq[0 + 1] + 1 - jdate:Dint_dec(zq[0 + 1], 8, 0) --# 冬至过后的第一天0点的儒略日数
+
     hs[1] = SolarTerms.jiaoCal(dongZhiJia1, 0, 1)  --# 首月结束的日月合朔时刻
 
     for i = 2,14 do
@@ -167,10 +174,10 @@ function baZi:solar2Lunar(bd)
     end
 
     local j = 0
-    jdate.setFromJD(C[0 + 1] + jdate.J2000 + 8/(24 - 0.0), 1)
-    while jdate.cmp_date({Y,M,D}) do
+    jdate:setFromJD(C[0 + 1] + jdate.J2000 + 8/(24 - 0.0), 1)
+    while 1 == jdate:cmp_date({Y,M,D}) do
         j = j + 1
-        jdate.setFromJD(C[j + 1] + jdate.J2000 + 8/(24 - 0.0), 1)
+        jdate:setFromJD(C[j + 1] + jdate.J2000 + 8/(24 - 0.0), 1)
     end
 
     if j == (nun+1) then
@@ -180,14 +187,21 @@ function baZi:solar2Lunar(bd)
     end
 
     if j == 0 then
-        jdate.setFromJD(C[14 + 1] + jdate.J2000 + 8/(24 - 0.0), 1)
+        jdate:setFromJD(C[14 + 1] + jdate.J2000 + 8/(24 - 0.0), 1)
     else
-        jdate.setFromJD(C[j-1 + 1] + jdate.J2000 + 8/(24- 0.0), 1)
+        jdate:setFromJD(C[j-1 + 1] + jdate.J2000 + 8/(24- 0.0), 1)
     end
 
-    local BD = {year = Y,month = M,day = D }
+    local BD = {year = Y,month = M,day = D}
 
-    local l_day = 1 + BD.day - jdate.GetDate().day
+    local tmpDay = jdate:GetDate()
+
+    local x1 = luatz.timetable.timestamp(BD.year,BD.month,BD.day,0,0,0)
+    local x2 = luatz.timetable.timestamp(tmpDay.year,tmpDay.month,tmpDay.day,0,0,0)
+
+    local days = math.floor((x1 -x2)/(3600*24))
+
+    local l_day = 1 + days
 
     j = (j+tot-1)%tot
 
@@ -203,11 +217,11 @@ function baZi:solar2Lunar(bd)
 
 end
 
-function baZi:lunar2Solar(bd,isLeapMonth)
+function bazi:lunar2Solar(bd,isLeapMonth)
     return SolarTerms.Lunar2Solar(bd,isLeapMonth)
 end
 
-function baZi:Get_PQ_SolarTerm()
+function bazi:Get_PQ_SolarTerm()
     local lfindx
     if self.lifa > 0 then
         lfindx = self.lifa - 1 + 1 --lua下标要加1
@@ -271,7 +285,7 @@ function baZi:Get_PQ_SolarTerm()
     return mindx,bjq:GetDatetime(),fjq:GetDatetime()
 end
 
-function baZi:Get_DQ_SolarTerm()
+function bazi:Get_DQ_SolarTerm()
     local mindx = self.bd.month
     local bd = JDatetime:new(self.bd)
     local bjq = JDatetime:new(self.bjq)
@@ -324,7 +338,7 @@ function baZi:Get_DQ_SolarTerm()
 end
 
 
-function baZi:GetSpanDays(tflag)
+function bazi:GetSpanDays(tflag)
     local bd
     if self.AST ~= 0 then
         bd = ast.calc_AST(self.bd,self.L)
@@ -359,7 +373,7 @@ function baZi:GetSpanDays(tflag)
     return {deltaY,deltaM,deltaD,deltaH}
 end
 
-function baZi:GetJiaoYunDate()
+function bazi:GetJiaoYunDate()
     local days = self.qyspan[0 + 1]*365.2422 + self.qyspan[1 + 1]*30.44 + self.qyspan[2 + 1]
     local hours = self.qyspan[3+1]
 
@@ -371,7 +385,7 @@ function baZi:GetJiaoYunDate()
     return dt
 end
 
-function baZi:Paipan()
+function bazi:Paipan()
     local bd
     if self.AST ~= 0 then
         bd = ast.calc_AST(self.bd,self.L)
@@ -463,7 +477,7 @@ function baZi:Paipan()
                             self.bazi[2+1],self.bazi[3+1],self.bazi[4+1],self.bazi[5+1],self.bazi[6+1],self.bazi[7+1],self.lifa,h,m)
 end
 
-function baZi:queryBaZi()
+function bazi:queryBaZi()
     local opt = string.format("%s%s %s%s %s%s %s%s",self.Tiangan[self.bazi[0+1]+1],
                              self.Dizhi[self.bazi[1+1]+1],self.Tiangan[self.bazi[2+1]+1],
                              self.Dizhi[self.bazi[3+1]+1],self.Tiangan[self.bazi[4+1]+1],
@@ -472,7 +486,7 @@ function baZi:queryBaZi()
     return opt
 end
 
-function baZi:getBaZi()
+function bazi:getBaZi()
     local tmpGender
     local output = {}
     if 1 == self.isFemale then
@@ -514,7 +528,7 @@ function baZi:getBaZi()
     return output
 end
 
-function baZi:printBaZi()
+function bazi:printBaZi()
     local output = {}
     local opt = string.format("            %s        %s        %s        %s",
                 self.ShiShen[self.shishen[self.bazi[0+1]+1]+1],
@@ -597,15 +611,11 @@ function baZi:printBaZi()
     end
     table.insert(output,opt)
 
-    --for test
-    for key,value in pairs(output) do
-        print(key.." = "..value)
-    end
     return output
 
 end
 
-function baZi:getMeridiem(hour,minute)
+function bazi:getMeridiem(hour,minute)
     local hm = hour*100 + minute
     if (hm < 600) then
         return "凌晨"
@@ -622,7 +632,7 @@ function baZi:getMeridiem(hour,minute)
     end
 end
 
-function baZi:printMst()
+function bazi:printMst()
     local bd = self.bd
     local md = self:getMeridiem(bd.hour,bd.min)
     local tmp = bd.hour
@@ -634,10 +644,266 @@ function baZi:printMst()
     return string.format("%s年%s月%s日 %s%s点%s",bd.year,bd.month,bd.day,md,tmp,st)
 end
 
+function bazi:printLunar()
+    local bd = self.bd
+    local h = bd.hour
+    local time = math.modf(h/2)
+    local DFlag = 0
+
+    if h%2 == 1 then
+        time = time + 1
+    end
+
+    if time == 12 then
+        DFlag = 1
+        time = 0
+    end
+
+    if DFlag == 1 then
+        local xTime = luatz.timetable.new(bd.year,bd.month,bd.day,bd.hour,bd.min,bd.sec)
+        local dt = xTime:clone()
+        dt.day = dt.day + 1
+        dt:normalise()
+        bd = dt
+    end
+
+    local l_y,l_m,l_d,isLeap = self:solar2Lunar(bd)
+
+    local ytmp = ((l_y - self.BaseYear) + 37)%60
+    local x = ytmp%12
+    local y = math.modf(ytmp/12)
+
+    local leapstr = ""
+    if 1== isLeap then
+        leapstr = "闰"
+    end
+
+    local output = string.format("%s%s年%s%s月%s %s时",self.ShizhuList[x+1][y+1],
+                                self.Shengxiao[x+1],leapstr,self.LunarMonthTerms[l_m+1],
+                                self.LunarDayTerms[l_d+1],self.Dizhi[time+1])
+    return output
+end
+
+function bazi:printAge()
+    local nowTime = os.date('*t',os.time())
+    local output = string.format('今年虚岁%d',(nowTime.year - self.bd.year + 1))
+    return output
+end
+
+function bazi:printLifa()
+    local res
+    if self.lifa >= 1 and self.lifa <=10 then
+        res = string.format('依据 %s 数据拟合 ',self.lifalst[self.lifa-1+1])
+
+    elseif self.lifa > 10 and self.lifa < 13 then
+        res = string.format('依据 %s 计算节气交合日期',self.lifalst[self.lifa-1+1])
+
+    else
+        res = "现代农历定气"
+    end
+
+    return res
+end
+
+function bazi:renderAST()
+    local output = {}
+    local opt = string.format("<p>出生地经度 %s&deg; </p>",self.L)
+    table.insert(output,opt)
+
+    local dt = ast.calc_AST(self.bd,self.L)
+    opt = string.format("<p>生日&#91;出生地真太阳时&#93;  %s年%s月%s日 %s时%s分  </p>",
+                       dt.year,dt.month,dt.day,dt.hour,dt.min)
+    table.insert(output,opt)
+
+    return output
+end
+
+function bazi:renderSolarterms()
+    local output = {}
+    local aststr
+    if 1== self.AST then
+        aststr = "&#91;出生地真太阳时&#93;"
+    else
+        aststr = ""
+    end
+
+    local opt = string.format("<p>%s%s   ",self.Jieqi[self.bazi[3+1]+1], aststr)
+    table.insert(output,opt)
+    local dt = self.bjq
+    local opt = string.format(" %s年%s月%s日 %s时%s分  </p>",dt.year,dt.month,dt.day,dt.hour,dt.min)
+    table.insert(output,opt)
+    local opt = string.format("<p>%s%s  ",self.Jieqi[self.bazi[3+1]+1+1],aststr)
+    table.insert(output,opt)
+
+    local dt = self.fjq
+    local opt = string.format(" %s年%s月%s日 %s时%s分 </p>",dt.year,dt.month,dt.day,dt.hour,dt.min)
+    table.insert(output,opt)
+
+    return output
+end
+
+function bazi:renderBaZi()
+    local row_rets = {"<br/>","<br/>","<br/><br/>","<br/>","<br/>",""}
+    local htmsp1 = "&nbsp"
+    local htmsp3 = "&nbsp;&nbsp;&nbsp"
+    local htmsp4 = "&nbsp;&nbsp;&nbsp;&nbsp"
+    local output = {'<td>'}
+
+    local opt = string.format('%s %s %s',htmsp1,htmsp3,row_rets[0+1])
+    table.insert(output,opt)
+
+    local opt = string.format('%s %s %s',self.Gender[self.isFemale+1],htmsp3,row_rets[1+1])
+    table.insert(output,opt)
+
+    local opt = string.format('%s %s %s',htmsp1,htmsp1,row_rets[2+1])
+    table.insert(output,opt)
+
+    local opt = string.format('%s %s %s',"藏干",htmsp4,row_rets[3+1])
+    table.insert(output,opt)
+
+    local opt = string.format('%s %s %s',htmsp1,htmsp3,row_rets[4+1])
+    table.insert(output,opt)
+
+    local opt = string.format('%s %s %s',htmsp1,htmsp3,row_rets[5+1])
+    table.insert(output,opt)
+    table.insert(output,'</td>')
+
+    local j,p
+    for i = 0,3 do
+        table.insert(output,'<td>')
+        j = i + i
+        p = j + 1
+        if i == 2 then
+            local opt = string.format('%s %s %s %s',htmsp1,"日元",htmsp4,row_rets[0+1])
+            table.insert(output,opt)
+        else
+            local opt = string.format('%s %s %s %s',htmsp1,self.ShiShen[self.shishen[self.bazi[j+1]+1]+1],htmsp4,row_rets[0+1])
+            table.insert(output,opt)
+        end
+
+        local opt = string.format('%s %s %s %s',htmsp3,self.Tiangan[self.bazi[j+1]+1],htmsp3,row_rets[1+1])
+        table.insert(output,opt)
+        local opt = string.format('%s %s %s %s',htmsp3,self.Dizhi[self.bazi[p+1]+1],htmsp3,row_rets[2+1])
+        table.insert(output,opt)
+
+        for q = 0,2 do
+            local k = self.Canggan[self.bazi[p+1]+1][q+1]
+            local opt = string.format("%s %s",self.Tiangan[k],self.ShiShen[self.shishen[k]+1])
+            local tmp = string.format('%s %s %s %s',htmsp1,opt,htmsp4,row_rets[q+3+1])
+            table.insert(output,tmp)
+        end
+        table.insert(output,'</td>')
+
+    end
+
+    return output
+end
+
+function bazi:renderDaYun()
+    local row_rets = {"<br/>","<br/><br/>","<br/><br/>","<br/>","<br/>","<br/>","<br/>",
+                    "<br/><br/>","<br/>","<br/>","<br/>","<br/>","<br/><br/>",""}
+    local htmsp1 = "&nbsp"
+    local htmsp3 = "&nbsp;&nbsp;&nbsp"
+    local output = {}
+
+    local tFlag = luabit.xorOp((self.bazi[0+1]%2),self.isFemale)
+
+    local offsets
+    if 1 == tFlag then
+        offsets = {9,11}
+    else
+        offsets = {1,1}
+    end
+
+    local qyspan = self.qyspan
+    local jydt = self.jydt
+    local opt = string.format('<p>命主于出生后%d年%d个月%d天%d小时后起运</p>',qyspan[0+1],qyspan[1+1],qyspan[2+1],qyspan[3+1])
+    table.insert(output,opt)
+    local opt = string.format('<p>命主于公历%d年%d月%d日%d时交运</p><br/>',jydt.year,jydt.month,jydt.day,jydt.hour)
+    table.insert(output,opt)
+
+    local j = self.bazi[2+1]
+    local k = self.bazi[3+1]
+    local s = self.bazi[2+1]
+    local now = os.time()
+    local nowDate = os.date('*t',now)
+
+    table.insert(output,'<td>')
+    table.insert(output,string.format('%s %s',"大运",row_rets[1+1]))
+    table.insert(output,string.format('%s %s',"起于",row_rets[2+1]))
+    table.insert(output,string.format('%s %s',"流年",row_rets[3+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[4+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[5+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[6+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[7+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[8+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[9+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[10+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[11+1]))
+    table.insert(output,string.format('%s %s',htmsp1,row_rets[12+1]))
+    table.insert(output,string.format('%s %s',"止于",row_rets[13+1]))
+    table.insert(output,'</td>')
+
+    local tmp = jydt
+    for i = 0,7 do
+        table.insert(output,'<td>')
+        j = j + offsets[0+1]
+        j = j % 10
+        k = k + offsets[1+1]
+        k = k % 12
+
+        local jydtTmp = tmp
+        local jydtStamp = os.time{year=jydtTmp.year,month=jydtTmp.month,day=jydtTmp.day,
+                                 hour=jydtTmp.hour,min=jydtTmp.min,sec=jydtTmp.sec}
+
+        local jydtYear = tmp.year
+
+        local jydtTime = luatz.timetable.new(jydtTmp.year,jydtTmp.month,jydtTmp.day,jydtTmp.hour,jydtTmp.min,jydtTmp.sec)
+        local dt = jydtTime:clone()
+        dt.year = dt.year + 10
+        dt:normalise()
+        tmp = dt
+
+        local dtStamp = dt:timestamp()
+
+        if (now >= dtStamp) or now < jydtStamp then
+            local opt = string.format("%s%s",self.Tiangan[j+1],self.Dizhi[k+1])
+            table.insert(output,string.format('%s %s %s',htmsp3,opt,row_rets[1+1]))
+        else
+            local opt = string.format("<i class=\"fa fa-play\"></i>&nbsp;%s%s",self.Tiangan[j+1],self.Dizhi[k+1])
+            table.insert(output,string.format('%s %s',opt,row_rets[1+1]))
+        end
+        local opt = jydtYear
+        table.insert(output,string.format('%s %s %s',htmsp3,opt,row_rets[2+1]))
+
+        local p = (jydtYear + 6)%10
+        local q = (jydtYear + 8)%12
+
+        for n = 0,9 do
+            if (nowDate.year - jydtYear) ~= n then
+                local opt = string.format("%s%s",self.Tiangan[p+1],self.Dizhi[q+1])
+                table.insert(output,string.format('%s %s %s',htmsp3,opt,row_rets[n+3+1]))
+            else
+                local opt = string.format("<i class=\"fa fa-play\"></i>&nbsp;%s%s",self.Tiangan[p+1],self.Dizhi[q+1])
+                table.insert(output,string.format('%s %s',opt,row_rets[n+3+1]))
+            end
+            p = p + 1
+            p = p % 10
+            q = q + 1
+            q = q % 12
+
+        end
+        local opt = jydtYear + 9
+        table.insert(output,string.format('%s %s %s',htmsp3,opt,row_rets[13+1]))
+        table.insert(output,'</td>')
+    end
+
+    return output
+end
 
 local function test()
     local dt = {year=1988,month=1,day=6,hour=3,min=50,sec=0}
-    local bz = baZi:new(dt,1,0,120,12)
+    local bz = bazi:new(dt,1,0,120,12)
     bz:Paipan()
     local res = bz:queryBaZi()
     print(res)
@@ -652,10 +918,41 @@ local function test()
     --local res = bz:GetJiaoYunDate()
     --print(res.year,res.month,res.day,res.hour,res.min,res.sec)
 
-    bz:printBaZi()
+    local res = bz:printBaZi()
+    for k,v in pairs(res) do
+        print(k.." = "..v)
+    end
+
     print(bz:printMst())
 
+    local res = bz:printLunar()
+    print(res)
+
+    local res = bz:printAge()
+    print(res)
+
+    local res = bz:printLifa()
+    print(res)
+
+    local res = bz:renderAST()
+    print(res)
+
+    local res = bz:renderSolarterms()
+    for k, v in pairs(res) do
+        print(v)
+    end
+
+    local res = bz:renderBaZi()
+    for k, v in pairs(res) do
+        print(v)
+    end
+
+
+    local res = bz:renderDaYun()
+    for k, v in pairs(res) do
+        print(v)
+    end
 end
 
---a = test()
-return baZi
+a = test()
+return bazi

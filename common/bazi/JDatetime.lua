@@ -170,9 +170,9 @@ end
 
 function JDatetime:setFromJD(jd, UTC)
     if (1 == UTC) then
-        jd = jd - self:dt_T2(jd - self.J2000)
+        local jd = jd - self:dt_T2(jd - self.J2000)
     end
-    jd = jd + 0.5
+    local jd = jd + 0.5
     local A  = self:int2(jd)
     local F = jd - A
     local D

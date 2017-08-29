@@ -83,8 +83,8 @@ if __name__ == '__main__':
     print res,resStr
     '''
 
-    dt = datetime.datetime(1984,2,10,8,5,1)
-    bz = Bazi.bazi(dt,0,0,120,11)
+    dt = datetime.datetime(1988,1,6,3,50,0)
+    bz = Bazi.bazi(dt,1,0,120,12)
     bz.Paipan()
     res = bz.print_8zi()
     print res
@@ -93,6 +93,25 @@ if __name__ == '__main__':
     res = bz.print_8zi()
     print res
 
+    res = bz.print_mst()
+    print res
+
+    res = bz.print_lunar()
+    print res
+
+    res = bz.print_age()
+    print res
+
+    res = bz.print_lifa()
+    print res
+
+    res = bz.render_bazi()
+    print res
+
+    res = bz.render_dayun()
+    print res
+
+    '''
     res = bz.SolarDaysFromBaseYear(dt)
     print res
 
@@ -101,3 +120,4 @@ if __name__ == '__main__':
 
     b,k = SolarTerms.bk_calc(dt,11)
     print b,k
+    '''

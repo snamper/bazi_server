@@ -717,7 +717,8 @@ local function strToTime(timeStr)
     local a = split(timeStr, " ")
     local b = split(a[1], "-")
     local c = split(a[2], ":")
-    dt = { year = tonumber(b[1]), month = tonumber(b[2]), day = tonumber(b[3]), hour = tonumber(c[1]), min = tonumber(c[2]), sec = tonumber(c[3]) }
+    local dt = { year = tonumber(b[1]), month = tonumber(b[2]), day = tonumber(b[3]),
+                 hour = tonumber(c[1]), min = tonumber(c[2]), sec = tonumber(c[3]) }
     return dt
 end
 
@@ -860,7 +861,7 @@ function _M.Lunar2Solar(bd,isLeapMonth)
 
     local retTime,timeStr = jdate:setFromJD(temp,1)
     retDate,dateStr = jdate:GetDate()
-    print(dateStr)
+    --print(dateStr)
 
     return 1,retDate
 end
