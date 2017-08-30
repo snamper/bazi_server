@@ -3,8 +3,8 @@ local JDatetime = require "JDatetime"
 local SolarTerms = require "SolarTerms"
 local ast = require "ast"
 local luatz = require "luatz"
---local luabit = require("util.luabit")
-local luabit  = require "luabit"
+local luabit = require("util.luabit")
+--local luabit  = require "luabit"
 
 local bazi = {}
 
@@ -102,7 +102,7 @@ function bazi:solarDaysFromBaseYear(date)
     local offset = 365*delta + math.modf(delta/4) - math.modf(delta/100) + math.modf(delta/400)
     offset = offset + pd[date.month -1 + 1] --lua中数组从1开始
 
-    if date.month > 2 and self.isLeapYear(date.year) then
+    if date.month > 2 and self:isLeapYear(date.year) then
         offset = offset + 1
     end
 
@@ -954,5 +954,5 @@ local function test()
     end
 end
 
-a = test()
+--a = test()
 return bazi
