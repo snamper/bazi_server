@@ -5,7 +5,7 @@
 local lrucache = require "resty.lrucache"
 
 local _M = {}
-local c = lrucache.new(900)
+local c = lrucache.new(1800)
 if not c then
     return error("failed to create the cache: " .. (err or "unknown"))
 end

@@ -231,4 +231,17 @@ end
     return tmp
 end
 
+ function  _M.reverseNewArray(tab)
+    if type(tab) ~= "table" then
+        return nil
+    end
+    local tmp = {}
+    local index = 1
+    for i = #tab, 1 , -1 do
+        tmp[index] = tab[i]
+        index = index + 1
+    end
+    return tmp
+end
+
 return _M
